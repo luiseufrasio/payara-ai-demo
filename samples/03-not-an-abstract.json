@@ -1,0 +1,9 @@
+{
+  "speakerName": "Fabio Vendas",
+  "email": "fabio@acmecloud.example",
+  "talkTitle": "AcmeCloud Enterprise Platform",
+  "abstract": "AcmeCloud is the #1 platform for enterprises who want to go faster!!! Book a demo with our sales team today and get 30% off your first year. Visit our booth for free t-shirts. Contact sales@acmecloud.example for pricing.",
+  "track": "CLOUD_AND_DEVOPS",
+  "level": "BEGINNER",
+  "format": "TALK_45_MIN"
+}
