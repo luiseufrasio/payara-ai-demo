@@ -43,6 +43,10 @@ public class SubmissionResource {
     public Response review(@PathParam("id") long id) {
         Submission submission = store.find(id).orElseThrow(NotFoundException::new);
         reviewRequested.fire(submission);   // synchronous: the workflow runs before we respond
-        return Response.accepted(Map.of("message", "Review requested")).build();
+        Submission reviewed = store.find(id).orElseThrow();
+        if (reviewed.review() == null) {
+            return Response.ok(Map.of("message", "Not reviewed: this is not a talk proposal")).build();
+        }
+        return Response.ok(reviewed).build();
     }
 }

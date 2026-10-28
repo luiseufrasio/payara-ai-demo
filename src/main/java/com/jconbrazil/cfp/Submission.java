@@ -16,4 +16,8 @@ public record Submission(
         Format format,
         Instant submittedAt,
         String review) {
+
+    public Submission withReview(String review) {
+        return new Submission(id, speakerName, email, talkTitle, abstractText, track, level, format, submittedAt, review);
+    }
 }

@@ -40,6 +40,10 @@ public class SubmissionStore {
         return submissions.stream().filter(s -> s.id() == id).findFirst();
     }
 
+    public void saveReview(long id, String review) {
+        submissions.replaceAll(s -> s.id() == id ? s.withReview(review) : s);
+    }
+
     public Submission add(NewSubmission in) {
         Submission submission = new Submission(
                 nextId.getAndIncrement(),

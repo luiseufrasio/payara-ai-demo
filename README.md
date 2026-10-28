@@ -48,7 +48,7 @@ The web app does not wait for the model download. `docker compose ps` shows
 |--------|------|-|
 | `GET`  | `/api/submissions` | List all submissions (3 are seeded) |
 | `POST` | `/api/submissions` | Create a submission; returns 400 with the validation errors |
-| `POST` | `/api/submissions/{id}/review` | **501 for now** – see "Live session" |
+| `POST` | `/api/submissions/{id}/review` | Runs the reviewer agent and returns the submission with its `review` |
 
 ```bash
 curl -X POST http://localhost:8080/api/submissions/1/review

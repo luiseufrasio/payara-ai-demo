@@ -4,6 +4,7 @@ import jakarta.ai.agent.Action;
 import jakarta.ai.agent.Agent;
 import jakarta.ai.agent.Decision;
 import jakarta.ai.agent.LargeLanguageModel;
+import jakarta.ai.agent.Outcome;
 import jakarta.ai.agent.Result;
 import jakarta.ai.agent.Trigger;
 import jakarta.ai.agent.WorkflowScoped;
@@ -74,6 +75,13 @@ public class CfpReviewerAgent {
         Review review = JSONB.fromJson(jsonIn(reply), Review.class);
         LOGGER.info(() -> "[ACTION] score " + review.score() + "/5 - " + review.comment());
         return review;
+    }
+
+    // Three parameters, three sources: the trigger event, the action's result and a CDI bean.
+    @Outcome
+    void publish(Submission submission, Review review, SubmissionStore store) {
+        store.saveReview(submission.id(), review.asText());
+        LOGGER.info(() -> "[OUTCOME] review published for #" + submission.id() + " \"" + submission.talkTitle() + "\"");
     }
 
     private static String jsonIn(String reply) {
