@@ -1,12 +1,12 @@
 package com.jconbrazil.cfp;
 
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SubmissionResourceTest {
 
@@ -30,11 +30,8 @@ class SubmissionResourceTest {
     }
 
     @Test
-    void reviewIsNotImplementedYet() {
-        Response response = resource.review(1);
-
-        assertEquals(501, response.getStatus());
-        assertEquals(Map.of("message", "Reviewer agent not built yet"), response.getEntity());
+    void reviewOfAnUnknownSubmissionIsNotFound() {
+        assertThrows(NotFoundException.class, () -> resource.review(99));
     }
 
     private static SubmissionResource resource() {

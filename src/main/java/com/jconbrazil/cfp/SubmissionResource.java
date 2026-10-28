@@ -1,9 +1,11 @@
 package com.jconbrazil.cfp;
 
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -22,6 +24,9 @@ public class SubmissionResource {
     @Inject
     SubmissionStore store;
 
+    @Inject
+    Event<Submission> reviewRequested;
+
     @GET
     public List<Submission> list() {
         return store.all();
@@ -36,9 +41,8 @@ public class SubmissionResource {
     @POST
     @Path("{id}/review")
     public Response review(@PathParam("id") long id) {
-        // TODO live: fire the agent trigger here
-        return Response.status(501)
-                .entity(Map.of("message", "Reviewer agent not built yet"))
-                .build();
+        Submission submission = store.find(id).orElseThrow(NotFoundException::new);
+        reviewRequested.fire(submission);   // synchronous: the workflow runs before we respond
+        return Response.accepted(Map.of("message", "Review requested")).build();
     }
 }
