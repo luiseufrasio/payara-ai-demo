@@ -55,17 +55,21 @@ public class CfpReviewerAgent {
                 + " received #" + submission.id() + " \"" + submission.talkTitle() + "\" by " + submission.speakerName());
     }
 
-    // Is it a real talk proposal? Result(false, ...) ends the workflow here.
+    // Is it a real talk proposal? Result(false, ...) ends the workflow here, and later phases
+    // never see the reason. So the decision itself tells the speaker why, in plain Java.
     // The Submission comes from the workflow state, the LargeLanguageModel from the runtime.
     // JSON Binding serializes the submission into the {} placeholder.
     @Decision
-    Result isTalkProposal(Submission submission, LargeLanguageModel llm) {
+    Result isTalkProposal(Submission submission, LargeLanguageModel llm, SubmissionStore store) {
         String answer = llm.query(PROPOSAL_PROMPT, submission).strip();
         String verdict = answer.lines().findFirst().orElse("");
         String reason = answer.lines().skip(1).collect(Collectors.joining(" ")).strip();
 
         boolean proposal = verdict.toUpperCase().contains("YES");
         LOGGER.info(() -> "[DECISION] talk proposal: " + proposal + " - " + reason);
+        if (!proposal) {
+            store.saveReview(submission.id(), Review.notAProposal(reason).asText());
+        }
         return new Result(proposal, reason);
     }
 

@@ -29,6 +29,27 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- The TCK ships LargeLanguageModelStub, a scripted LLM for unit tests -->
+        <dependency>
+            <groupId>jakarta.agentic-ai</groupId>
+            <artifactId>jakarta.agentic-ai-tck</artifactId>
+            <version>1.0.0-M1</version>
+            <scope>test</scope>
+            <!-- Only the stub class is needed: keep the TCK's own JUnit and Arquillian out -->
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- A JSON Binding implementation for the agent tests; Payara provides one at runtime -->
+        <dependency>
+            <groupId>org.eclipse</groupId>
+            <artifactId>yasson</artifactId>
+            <version>3.0.4</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

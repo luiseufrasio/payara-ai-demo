@@ -1,6 +1,5 @@
 package com.jconbrazil.cfp;
 
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -25,11 +24,17 @@ public class SubmissionResource {
     SubmissionStore store;
 
     @Inject
-    Event<Submission> reviewRequested;
+    ReviewDispatcher dispatcher;
 
     @GET
     public List<Submission> list() {
         return store.all();
+    }
+
+    @GET
+    @Path("{id}")
+    public Submission get(@PathParam("id") long id) {
+        return store.find(id).orElseThrow(NotFoundException::new);
     }
 
     @POST
@@ -42,11 +47,7 @@ public class SubmissionResource {
     @Path("{id}/review")
     public Response review(@PathParam("id") long id) {
         Submission submission = store.find(id).orElseThrow(NotFoundException::new);
-        reviewRequested.fire(submission);   // synchronous: the workflow runs before we respond
-        Submission reviewed = store.find(id).orElseThrow();
-        if (reviewed.review() == null) {
-            return Response.ok(Map.of("message", "Not reviewed: this is not a talk proposal")).build();
-        }
-        return Response.ok(reviewed).build();
+        dispatcher.dispatch(submission);   // the workflow runs on a managed thread
+        return Response.accepted(Map.of("message", "Under review...")).build();
     }
 }

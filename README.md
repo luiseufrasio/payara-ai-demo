@@ -48,7 +48,8 @@ The web app does not wait for the model download. `docker compose ps` shows
 |--------|------|-|
 | `GET`  | `/api/submissions` | List all submissions (3 are seeded) |
 | `POST` | `/api/submissions` | Create a submission; returns 400 with the validation errors |
-| `POST` | `/api/submissions/{id}/review` | Runs the reviewer agent and returns the submission with its `review` |
+| `GET`  | `/api/submissions/{id}` | One submission, with its `review` once the agent is done |
+| `POST` | `/api/submissions/{id}/review` | Starts the reviewer agent in the background; returns 202 |
 
 ```bash
 curl -X POST http://localhost:8080/api/submissions/1/review
@@ -125,10 +126,52 @@ To try the agent, paste the abstracts from `samples/`:
 2. `02-needs-live-demo.md` – only works with a live demo on stage
 3. `03-not-an-abstract.md` – a sales pitch / a single line
 
+## The reviewer agent
+
+`CfpReviewerAgent` is built live, one branch per step:
+
+| Branch | Step |
+|--------|------|
+| `0-initial` | The starter app: "Request review" answers 501 |
+| `1-trigger` | `@Agent` + `@Trigger`: a review request is a CDI event |
+| `2-decision` | `@Decision`: the LLM checks that it is a real talk proposal |
+| `3-action` | `@Action`: the LLM writes a structured `Review` |
+| `4-outcome` | `@Outcome`: the review is published on the submission |
+| `5-exception` | `@HandleException`: when the LLM fails, a human reviews |
+| `6-plain-java` | What still ends up in plain Java |
+
+The agent is annotated `@WorkflowScoped` although that is the default scope:
+this app has no `beans.xml`, so CDI only discovers classes with a
+bean-defining annotation, and `@Agent` is not one. Without a scope the agent
+is ignored, with no error.
+
+### What still ends up in plain Java
+
+| Need | Where |
+|------|-------|
+| Tell the speaker why a submission was rejected: a negative `Result` ends the workflow and no later phase sees it | The `@Decision` writes the rejection itself |
+| Read JSON from a local model that wraps it in markdown fences | `jsonIn(...)` + JSON Binding in the `@Action` |
+| A fallback review after an LLM failure: handlers return `void` | The `@Outcome` accepts a missing `Review` |
+| Do not block the HTTP request: the trigger is observed synchronously, so `Event.fireAsync` never reaches the agent | `ReviewDispatcher` fires on a `ManagedExecutorService`; the page polls |
+| Unit tests | `CfpReviewerAgentTest` calls the phases directly with the TCK's `LargeLanguageModelStub` |
+
+## Run without Docker
+
+With Ollama on your machine:
+
+```bash
+mvn package
+java -jar payara-micro-7.2026.9.jar --deploy target/ROOT.war
+```
+
+Override the model or the Ollama URL with system properties, for example
+`-Dpayara.agentic.llm.model=gemma3:12b`.
+
 ## Build and test without Docker
 
 ```bash
 mvn package
 ```
 
-Runs one smoke test for the REST resource and produces `target/ROOT.war`.
+Runs the tests for the REST resource and the agent (no server, no Ollama) and
+produces `target/ROOT.war`.

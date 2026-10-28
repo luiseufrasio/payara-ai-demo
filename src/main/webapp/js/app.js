@@ -44,6 +44,21 @@ async function requestReview(id, messageElement) {
     const response = await fetch(`api/submissions/${id}/review`, { method: "POST" });
     const body = await response.json();
     showMessage(messageElement, body.review ?? body.message ?? JSON.stringify(body), !response.ok);
+    if (response.status === 202) {
+        pollReview(id, messageElement);
+    }
+}
+
+// The agent runs in the background: ask every 2 seconds until the review is there.
+async function pollReview(id, messageElement) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const response = await fetch(`api/submissions/${id}`);
+    const submission = await response.json();
+    if (submission.review) {
+        showMessage(messageElement, submission.review, false);
+    } else {
+        pollReview(id, messageElement);
+    }
 }
 
 form.addEventListener("submit", async (event) => {
