@@ -6,8 +6,14 @@ import java.util.List;
 // score: 1 (reject) to 5 (must accept)
 public record Review(int score, List<String> strengths, List<String> weaknesses, String comment) {
 
+    // Published when the automatic review failed and a person has to step in
+    public static Review forHumanReview() {
+        return new Review(0, List.of(), List.of(),
+                "The automatic review is unavailable. A member of the program committee will review this submission.");
+    }
+
     // What the "Review" column of the page shows
     public String asText() {
-        return score + "/5 - " + comment;
+        return score > 0 ? score + "/5 - " + comment : comment;
     }
 }

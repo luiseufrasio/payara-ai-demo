@@ -3,6 +3,8 @@ package com.jconbrazil.cfp;
 import jakarta.ai.agent.Action;
 import jakarta.ai.agent.Agent;
 import jakarta.ai.agent.Decision;
+import jakarta.ai.agent.HandleException;
+import jakarta.ai.agent.LLMException;
 import jakarta.ai.agent.LargeLanguageModel;
 import jakarta.ai.agent.Outcome;
 import jakarta.ai.agent.Result;
@@ -10,6 +12,7 @@ import jakarta.ai.agent.Trigger;
 import jakarta.ai.agent.WorkflowScoped;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -72,15 +75,28 @@ public class CfpReviewerAgent {
     @Action
     Review review(LargeLanguageModel llm) {
         String reply = llm.query(REVIEW_PROMPT);
-        Review review = JSONB.fromJson(jsonIn(reply), Review.class);
+        Review review;
+        try {
+            review = JSONB.fromJson(jsonIn(reply), Review.class);
+        } catch (JsonbException e) {
+            throw new LLMException("The LLM reply is not a review: " + reply, e);
+        }
         LOGGER.info(() -> "[ACTION] score " + review.score() + "/5 - " + review.comment());
         return review;
+    }
+
+    // The most specific handler for the exception wins. Returning normally recovers the workflow:
+    // Payara then goes straight to the @Outcome, without the review.
+    @HandleException
+    void llmFailed(LLMException e, Submission submission) {
+        LOGGER.warning(() -> "[EXCEPTION] " + e.getMessage() + " - #" + submission.id() + " goes to a human reviewer");
     }
 
     // Three parameters, three sources: the trigger event, the action's result and a CDI bean.
     @Outcome
     void publish(Submission submission, Review review, SubmissionStore store) {
-        store.saveReview(submission.id(), review.asText());
+        Review published = review != null ? review : Review.forHumanReview();
+        store.saveReview(submission.id(), published.asText());
         LOGGER.info(() -> "[OUTCOME] review published for #" + submission.id() + " \"" + submission.talkTitle() + "\"");
     }
 
